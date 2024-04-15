@@ -22,8 +22,53 @@ if (isset($_GET['id'])) {
     }
 }
 
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $errors = [];
 
+    // Validazione dei campi
+    if (empty($_POST['titolo']) || empty($_POST['autore']) || empty($_POST['anno_pubblicazione']) || empty($_POST['genere'])) {
+        $errors[] = "Tutti i campi sono obbligatori.";
+    } 
+    if  (!is_numeric($_POST['anno_pubblicazione']) || $_POST['anno_pubblicazione'] <= 0) 
+    {
+            $errors[] = "L'anno di pubblicazione deve essere un numero positivo.";
+    }
+
+    // Se ci sono errori, mostra un messaggio di errore
+    if (!empty($errors)) {
+        foreach ($errors as $error) {
+            echo "<p>$error</p>";
+        }
+    } else {
+        try {
+            if (isset($_GET['id'])) {
+                // Se è presente l'id, esegui l'aggiornamento
+                $query = "UPDATE libri SET titolo = :titolo, autore= :autore , anno_pubblicazione= :anno_pubblicazione, genere =:genere WHERE id = :id";
+                $statement = $pdo->prepare($query);
+                $statement -> execute( ['id'=>$id, 
+                'titolo'=>$_POST['titolo'],
+                'autore'=>$_POST['autore'],
+                'anno_pubblicazione'=>$_POST['anno_pubblicazione'],
+                'genere'=>$_POST['genere'],]);
+            } else {
+                // Altrimenti, esegui l'inserimento di un nuovo record
+                $query = "INSERT INTO libri (titolo, autore, anno_pubblicazione, genere) VALUES (:titolo, :autore, :anno_pubblicazione, :genere)";
+                $statement = $pdo->prepare($query);
+                $statement -> execute( [ 
+                'titolo'=>$_POST['titolo'],
+                'autore'=>$_POST['autore'],
+                'anno_pubblicazione'=>$_POST['anno_pubblicazione'],
+                'genere'=>$_POST['genere'],]);
+            }
+            // Dopo aver eseguito l'azione, reindirizza a index.php
+            header('Location:index.php');
+        } catch (PDOException $e) {
+            die("Errore durante l'esecuzione della query: " . $e->getMessage());
+        }
+    }
+}
 ?>
+
 
 
 
@@ -38,9 +83,8 @@ if (isset($_GET['id'])) {
 </head>
 <body>
 
-
 <div class="container mt-5">
-    <form class="text-center" action="<?php echo isset($id) ? 'post.php?id=' . $id : 'post.php'; ?>" method="post">
+    <form class="text-center"  method="post">
         <h1><?php echo isset($id) ? 'Modifica Libro': 'Aggiungi Libro'; ?></h1>
         <div class="mb-3">
             <label for="title" class="form-label">Titolo</label>
